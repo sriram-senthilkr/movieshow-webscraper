@@ -58,7 +58,7 @@
 # # Example usage
 # check_for_new_movies()
 
-
+import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
@@ -67,6 +67,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 
+### set-up
 chrome_options = Options()
 chrome_options.add_argument('--headless') 
 chrome_options.add_argument('--disable-dev-shm-usage')
@@ -77,22 +78,67 @@ driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 
 url = 'https://carnivalcinemas.sg/#/Movies'
 
-driver.get(url)
+current_movies = []
+previous_movies = []
 
-# Wait for the element with class 'movies' to be present
-element = WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.CSS_SELECTOR, '[dynamic="Moviesdetails"]'))
-)
+def check_for_changes(previous_movies, current_movies):
+    new_movies = [movie for movie in current_movies if movie not in previous_movies]
+    
+    # Notify if there are new movies
+    if new_movies:
+        with open('currentmovies.txt', 'w', encoding='utf-8') as file:
+            for movie in current_movies:
+                file.write(movie + '\n')
+        print("New movies detected:")
+        for movie in new_movies:
+            print(movie)
+    
+def retrieve_previous_movies(previous_movies):
+    try:
+        with open('currentmovies.txt', 'r', encoding='utf-8') as file:
+            previous_movies = file.readlines()
+            previous_movies = [movie.strip() for movie in previous_movies]
+    except FileNotFoundError:
+        previous_movies = []
 
-soup = BeautifulSoup(element.get_attribute('outerHTML'), 'html.parser')
-movie_listings = soup.find_all('div', class_='movies')
+def scrape_movies(current_movies):
+    ### execution
+        driver.get(url)
 
-driver.quit()
+        # Wait for the element with class 'movies' to be present
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[dynamic="Moviesdetails"]'))
+        )
+
+        soup = BeautifulSoup(element.get_attribute('outerHTML'), 'html.parser')
+        movie_listings = soup.find_all('div', class_='movies')
 
 
-for movie in movie_listings:
-    h2_element = movie.find('h2')
-    if h2_element:
-        h2_content = h2_element.text
-        print(h2_content)
+        for movie in movie_listings:
+            h2_element = movie.find('h2')
+            if h2_element:
+                h2_content = h2_element.text
+                current_movies.append(h2_content)
 
+while True:
+    try:
+        scrape_movies(current_movies)
+
+        try:
+            with open('currentmovies.txt', 'r', encoding='utf-8') as file:
+                previous_movies = file.readlines()
+                previous_movies = [movie.strip() for movie in previous_movies]
+        except FileNotFoundError:
+            previous_movies = []
+        
+        # retrieve_previous_movies(previous_movies)
+
+        check_for_changes(previous_movies, current_movies)
+        current_movies = []
+    
+        time.sleep(10)
+
+    except Exception as e:
+        print(f"An error has occured: {str(e)}")
+        driver.quit()
+        break
