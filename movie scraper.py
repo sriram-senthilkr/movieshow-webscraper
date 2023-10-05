@@ -64,18 +64,19 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 
+chrome_options = Options()
+chrome_options.add_argument('--headless') 
+chrome_options.add_argument('--disable-dev-shm-usage')
 
-# Set up Chrome webdriver (you'll need to download chromedriver.exe and specify its path)
 chrome_path = r'C:\Program Files (x86)\chromedriver.exe'
 chrome_service = ChromeService(chrome_path)
-driver = webdriver.Chrome(service=chrome_service)
+driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 
-# URL of the webpage
 url = 'https://carnivalcinemas.sg/#/Movies'
 
-# Navigate to the webpage
 driver.get(url)
 
 # Wait for the element with class 'movies' to be present
