@@ -26,8 +26,10 @@ url = f"https://api.telegram.org/bot{config.telegram_token}"
 ## variables
 current_movies = []
 new_movies = []
+# urls_to_check = ["https://carnivalcinemas.sg/#/800/800", "https://carnivalcinemas.sg/#/Leo(NC16)/Leo(NC16)", "https://carnivalcinemas.sg/#/Leo(M18)/Leo(M18)"]
 
-def scrape_movies(new_movies):
+def scrape_new_movies(new_movies):
+    try:
     ### execution
         driver.get(murl)
 
@@ -45,6 +47,8 @@ def scrape_movies(new_movies):
             if h2_element:
                 h2_content = h2_element.text
                 new_movies.append(h2_content)
+    except Exception as e:
+        send_telegram_notification(f"An error has occured while scraping: {str(e)}")
 
 def send_telegram_notification(message):
     params = {"chat_id": config.chat_id, "text": message}
@@ -70,18 +74,33 @@ def check_for_changes(current_movies, new_movies):
         send_telegram_notification(message)
         print(message)
 
+def check_url(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            send_telegram_notification(f"{url} is available")
+            print(f"{url} is available")
+    except requests.exceptions.RequestException as e:
+        send_telegram_notification(f"(Error: {e}) {url} is not available")
+        print(f"(Error: {e}) {url} is not available")
+
+
+
 
 while True:
     try:
-        scrape_movies(new_movies)
+        scrape_new_movies(new_movies)
         current_movies = retrieve_current_movies()
 
         check_for_changes(current_movies, new_movies)
         new_movies = []
+
+        # for url in urls_to_check:
+        #     check_url(url)
     
         time.sleep(10)
 
     except Exception as e:
-        print(f"An error has occured: {str(e)}")
+        send_telegram_notification(f"An error has occured: {str(e)}")
         driver.quit()
         break
