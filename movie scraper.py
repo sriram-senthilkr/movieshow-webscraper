@@ -26,7 +26,6 @@ url = f"https://api.telegram.org/bot{config.telegram_token}"
 ## variables
 current_movies = []
 new_movies = []
-# urls_to_check = ["https://carnivalcinemas.sg/#/800/800", "https://carnivalcinemas.sg/#/Leo(NC16)/Leo(NC16)", "https://carnivalcinemas.sg/#/Leo(M18)/Leo(M18)"]
 
 def scrape_new_movies(new_movies):
     try:
