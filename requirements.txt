@@ -1,0 +1,6 @@
+selenium>=4.0.0
+requests>=2.20.0
+beautifulsoup4>=4.9.0
+
+# Optional helpers (not required by current code):
+# webdriver-manager>=3.8.4
