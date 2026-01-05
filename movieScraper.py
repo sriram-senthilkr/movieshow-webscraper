@@ -1,6 +1,7 @@
 import time
 import requests
 import config
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
@@ -11,10 +12,13 @@ from bs4 import BeautifulSoup
 
 ### chrome driver set-up
 chrome_options = Options()
-chrome_options.add_argument('--headless') 
+chrome_options.add_argument('--headless')
 chrome_options.add_argument('--disable-dev-shm-usage')
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-gpu')
 
-chrome_path = r'C:\Program Files (x86)\chromedriver.exe'
+# On Linux set CHROMEDRIVER_PATH env var or ensure chromedriver is at '/usr/bin/chromedriver'
+chrome_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
 chrome_service = ChromeService(chrome_path)
 driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
 

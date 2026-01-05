@@ -31,7 +31,35 @@
 - Google Chrome (or Chromium) browser installed
 - Chromedriver that matches your Chrome version (or use a compatible driver)
 
-On macOS you can install Chromedriver via Homebrew:
+On Linux (Debian/Ubuntu) you can install Chrome + Chromedriver in a few ways:
+
+- Option A — install Chromium and the packaged chromedriver (may be out-of-date on some distros):
+
+```bash
+sudo apt update
+sudo apt install -y chromium-browser chromium-chromedriver
+```
+
+- Option B — install Google Chrome and download the matching Chromedriver manually:
+
+1. Install Google Chrome (Debian/Ubuntu example):
+
+```bash
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -f install -y
+```
+
+2. Find your Chrome version (`google-chrome --version`) and download the corresponding Chromedriver from https://chromedriver.chromium.org/downloads. Extract the binary and move it to `/usr/local/bin` or `/usr/bin`:
+
+```bash
+unzip chromedriver_linux64.zip
+sudo mv chromedriver /usr/local/bin/
+sudo chmod +x /usr/local/bin/chromedriver
+```
+
+You can verify the driver with `which chromedriver` or `/usr/local/bin/chromedriver --version`.
+
+On macOS you can still use Homebrew:
 
 ```bash
 # cask (preferred for GUI apps)
@@ -40,8 +68,6 @@ brew install --cask chromedriver
 # or (if available)
 brew install chromedriver
 ```
-
-Confirm the chromedriver binary is present (e.g., `/usr/local/bin/chromedriver` or `/opt/homebrew/bin/chromedriver`).
 
 ## Setup
 
@@ -68,19 +94,16 @@ telegram_token = "YOUR_TELEGRAM_BOT_TOKEN"
 chat_id = "YOUR_CHAT_ID"
 ```
 
-4. Update the Chromedriver path in `movieScraper.py` if necessary. By default the script contains a Windows path:
+4. Chromedriver path and environment variable
 
-```py
-chrome_path = r'C:\\Program Files (x86)\\chromedriver.exe'
+The scraper now checks the `CHROMEDRIVER_PATH` environment variable (recommended) and falls back to `/usr/bin/chromedriver` by default. Set the env var if your chromedriver is installed in a non-standard location:
+
+```bash
+export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+# or, for example, /opt/homebrew/bin/chromedriver on macOS
 ```
 
-Change it to your macOS path or put `chromedriver` on your `PATH` and update the code to use the correct location, e.g.:
-
-```py
-chrome_path = '/opt/homebrew/bin/chromedriver'
-```
-
-Alternatively you can modify `movieScraper.py` to use `webdriver-manager` (not installed by default) or mount the driver on PATH.
+No code change is required if `chromedriver` is on your `PATH` and installed to a standard location. If you prefer a hardcoded path, edit the `chrome_path` value in `movieScraper.py`.
 
 ## Running the scraper
 
@@ -130,6 +153,32 @@ Simple `tmux` or `screen` session works. To run via `cron` (example, every 5 min
 # m h  dom mon dow command
 */5 * * * * /path/to/.venv/bin/python /path/to/movieshow-webscraper/movieScraper.py >> /path/to/movieshow-webscraper/scraper.log 2>&1
 ```
+
+### Optional: Automated Chromedriver install with `setup.sh`
+
+If you'd like a helper to install a matching Chromedriver on Debian/Ubuntu, there's a `setup.sh` script included at the repo root. It will attempt to detect your Chrome/Chromium version, download the corresponding Chromedriver, move it to `/usr/local/bin`, and add a `CHROMEDRIVER_PATH` export to your `~/.profile`.
+
+Run (as root or with `sudo`):
+
+```bash
+chmod +x setup.sh
+sudo ./setup.sh
+```
+
+After the script finishes either open a new shell or run:
+
+```bash
+source ~/.profile
+export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+```
+
+Then run the scraper as usual:
+
+```bash
+/path/to/.venv/bin/python movieScraper.py
+```
+
+This `setup.sh` option is provided in addition to the manual install options above — you can keep using whichever method you prefer.
 
 ## Requirements
 
