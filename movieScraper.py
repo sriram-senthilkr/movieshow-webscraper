@@ -28,6 +28,16 @@ url = f"https://api.telegram.org/bot{config.telegram_token}"
 current_movies = []
 new_movies = []
 
+# Initialize currentmovies.txt on script start
+def initialize_movies_file():
+    try:
+        with open('currentmovies.txt', 'w', encoding='utf-8') as file:
+            file.write('')  # Create empty file or clear existing contents
+        print("currentmovies.txt initialized")
+    except Exception as e:
+        send_telegram_notification(f"Error initializing currentmovies.txt: {str(e)}")
+        print(f"Error initializing currentmovies.txt: {str(e)}")
+
 def scrape_new_movies(new_movies):
     try:
     ### execution
@@ -86,6 +96,9 @@ def check_url(url):
 
 
 
+
+# Initialize the movies file when script starts
+initialize_movies_file()
 
 while True:
     try:
