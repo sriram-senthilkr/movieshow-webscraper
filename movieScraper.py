@@ -17,10 +17,7 @@ chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-gpu')
 
-# On Linux set CHROMEDRIVER_PATH env var or ensure chromedriver is at '/usr/bin/chromedriver'
-chrome_path = os.environ.get('CHROMEDRIVER_PATH', '/usr/bin/chromedriver')
-chrome_service = ChromeService(chrome_path)
-driver = webdriver.Chrome(service=chrome_service, options=chrome_options)
+driver = webdriver.Chrome(options=chrome_options)
 
 murl = 'https://carnivalcinemas.sg/#/Movies'
 
