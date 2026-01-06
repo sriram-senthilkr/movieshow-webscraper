@@ -94,17 +94,6 @@ telegram_token = "YOUR_TELEGRAM_BOT_TOKEN"
 chat_id = "YOUR_CHAT_ID"
 ```
 
-4. Chromedriver path and environment variable
-
-The scraper now checks the `CHROMEDRIVER_PATH` environment variable (recommended) and falls back to `/usr/bin/chromedriver` by default. Set the env var if your chromedriver is installed in a non-standard location:
-
-```bash
-export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
-# or, for example, /opt/homebrew/bin/chromedriver on macOS
-```
-
-No code change is required if `chromedriver` is on your `PATH` and installed to a standard location. If you prefer a hardcoded path, edit the `chrome_path` value in `movieScraper.py`.
-
 ## Running the scraper
 
 Run the script from the project root (with your virtualenv active):
@@ -139,46 +128,9 @@ curl "https://api.telegram.org/bot${TOKEN}/sendMessage" -d chat_id=${CHAT_ID} -d
 
 ## Suggested improvements
 
-- Move configuration into environment variables or a `.env` file (avoid committing secrets).
 - Add CLI flags to set chromedriver path, headless mode, and polling interval.
 - Use `webdriver-manager` to avoid manual Chromedriver management.
 - Add logging (Python `logging`) and rotate logs.
-- Make the site-specific selectors configurable so the scraper can be reused for other sites.
-
-## Running as a background job (example)
-
-Simple `tmux` or `screen` session works. To run via `cron` (example, every 5 minutes):
-
-```cron
-# m h  dom mon dow command
-*/5 * * * * /path/to/.venv/bin/python /path/to/movieshow-webscraper/movieScraper.py >> /path/to/movieshow-webscraper/scraper.log 2>&1
-```
-
-### Optional: Automated Chromedriver install with `setup.sh`
-
-If you'd like a helper to install a matching Chromedriver on Debian/Ubuntu, there's a `setup.sh` script included at the repo root. It will attempt to detect your Chrome/Chromium version, download the corresponding Chromedriver, move it to `/usr/local/bin`, and add a `CHROMEDRIVER_PATH` export to your `~/.profile`.
-
-Run (as root or with `sudo`):
-
-```bash
-chmod +x setup.sh
-sudo ./setup.sh
-```
-
-After the script finishes either open a new shell or run:
-
-```bash
-source ~/.profile
-export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
-```
-
-Then run the scraper as usual:
-
-```bash
-/path/to/.venv/bin/python movieScraper.py
-```
-
-This `setup.sh` option is provided in addition to the manual install options above — you can keep using whichever method you prefer.
 
 ## Requirements
 
