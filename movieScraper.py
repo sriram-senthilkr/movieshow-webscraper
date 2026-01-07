@@ -9,6 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 
 ### chrome driver set-up
 chrome_options = Options()
@@ -27,6 +28,15 @@ url = f"https://api.telegram.org/bot{config.telegram_token}"
 ## variables
 current_movies = []
 new_movies = []
+
+# Error tracking
+error_state = {
+    "in_error": False,
+    "error_message": None,
+    "first_error_time": None,
+    "last_notification_time": None,
+    "notification_interval": 1200  # Notify every 5 minutes while in error state
+}
 
 # Initialize currentmovies.txt on script start
 def initialize_movies_file():
@@ -57,12 +67,49 @@ def scrape_new_movies(new_movies):
             if h2_element:
                 h2_content = h2_element.text
                 new_movies.append(h2_content)
+        
+        # If we were in error state and now succeeded, reset it
+        handle_recovery()
+        
     except Exception as e:
-        send_telegram_notification(f"An error has occured while scraping: {str(e)}")
+        handle_error(f"An error has occured while scraping: {str(e)}")
 
 def send_telegram_notification(message):
     params = {"chat_id": config.chat_id, "text": message}
     r = requests.get(url + "/sendMessage", params=params)
+
+def handle_error(error_message):
+    """Handle errors gracefully with interval-based notifications"""
+    now = datetime.now()
+    
+    if not error_state["in_error"]:
+        # First time hitting this error
+        error_state["in_error"] = True
+        error_state["error_message"] = error_message
+        error_state["first_error_time"] = now
+        error_state["last_notification_time"] = now
+        send_telegram_notification(f"❌ ERROR DETECTED:\n{error_message}\n\nWill notify you every 20 minutes if issue persists.")
+        print(f"[ERROR] {error_message}")
+    else:
+        # Already in error state, check if we should notify again
+        time_since_last_notification = (now - error_state["last_notification_time"]).total_seconds()
+        
+        if time_since_last_notification >= error_state["notification_interval"]:
+            time_in_error = (now - error_state["first_error_time"]).total_seconds() / 60
+            send_telegram_notification(f"⏱️ Still having issues (for {int(time_in_error)} minutes):\n{error_message}")
+            error_state["last_notification_time"] = now
+            print(f"[ERROR - {int(time_in_error)} min] {error_message}")
+
+def handle_recovery():
+    """Handle recovery from error state"""
+    if error_state["in_error"]:
+        time_in_error = (datetime.now() - error_state["first_error_time"]).total_seconds() / 60
+        send_telegram_notification(f"✅ SERVICE RECOVERED!\nSystem is back to normal after {int(time_in_error)} minutes of errors.")
+        print(f"[RECOVERED] Service back to normal after {int(time_in_error)} minutes")
+        error_state["in_error"] = False
+        error_state["error_message"] = None
+        error_state["first_error_time"] = None
+        error_state["last_notification_time"] = None
 
 def retrieve_current_movies():
     try:
@@ -114,6 +161,5 @@ while True:
         time.sleep(10)
 
     except Exception as e:
-        send_telegram_notification(f"An error has occured: {str(e)}")
-        driver.quit()
-        break
+        handle_error(f"Unexpected error in main loop: {str(e)}")
+        time.sleep(30)
