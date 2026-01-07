@@ -2,6 +2,7 @@ import time
 import requests
 import config
 import os
+import platform
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
@@ -18,7 +19,21 @@ chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-gpu')
 
-driver = webdriver.Chrome(options=chrome_options)
+# Detect OS and use appropriate chromedriver
+system = platform.system()
+if system == 'Linux':
+    # For Raspberry Pi and Linux systems
+    service = ChromeService(executable_path='/usr/bin/chromedriver')
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+elif system == 'Darwin':
+    # For macOS
+    driver = webdriver.Chrome(options=chrome_options)
+elif system == 'Windows':
+    # For Windows
+    driver = webdriver.Chrome(options=chrome_options)
+else:
+    # Fallback for unknown OS
+    driver = webdriver.Chrome(options=chrome_options)
 
 murl = 'https://carnivalcinemas.sg/#/Movies'
 
