@@ -2,7 +2,7 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON_SCRIPT="$SCRIPT_DIR/movieScraper.py"
+PYTHON_SCRIPT="$SCRIPT_DIR/main.py"
 CONFIG_FILE="$SCRIPT_DIR/config.py"
 PID_FILE="/tmp/movieScraper.pid"
 
