@@ -10,6 +10,20 @@ The main entry point is `movieScraper.py`. It runs an infinite loop that polls a
 python movieScraper.py
 ```
 
+**Behavior:**
+- Script starts in PAUSED state
+- Sends Telegram notification: "Bot started! Use /start to begin scraping"
+- Waits for commands via Telegram
+
+## Telegram Commands
+
+Control the bot via Telegram:
+
+- `/start` - Start scraping. Bot begins polling the website every 10 seconds
+- `/stop` - Stop scraping. Bot enters idle mode
+- `/list` - Show all movies currently being tracked
+- `/status` - Show current bot state (Running/Stopped)
+
 ## Setup
 
 1. Create a virtual environment and install dependencies:
@@ -29,11 +43,17 @@ python movieScraper.py
 
 ## Architecture
 
+**State Machine:**
+- The bot uses a `scraper_state` dictionary with `is_running` flag
+- Starts in PAUSED state by default
+- Background thread listens for Telegram commands
+- Main loop checks state before each scrape cycle
+
 **Main Loop Flow:**
-1. `scrape_new_movies()` - Uses Selenium to fetch the Carnival Cinemas page, waits for `[dynamic="Moviesdetails"]` element, extracts movie titles from `<div class='movies'><h2>` elements
-2. `retrieve_current_movies()` - Reads previously seen movies from `currentmovies.txt`
-3. `check_for_changes()` - Compares new vs current, writes new list to file if changed, sends Telegram notification for new movies
-4. Sleeps 10 seconds and repeats
+1. Check `scraper_state["is_running"]`
+2. If RUNNING: `scrape_new_movies()` → `retrieve_current_movies()` → `check_for_changes()` → sleep 10 seconds
+3. If PAUSED: Sleep 2 seconds, then check state again
+4. Repeat indefinitely
 
 **Error Handling:**
 - The script uses an `error_state` dictionary (movieScraper.py:48-54) to track error persistence
@@ -52,3 +72,18 @@ python movieScraper.py
 - **beautifulsoup4** - HTML parsing
 - **requests** - HTTP calls to Telegram Bot API
 - **config** (local module) - Holds telegram_token and chat_id
+- **pytest** - Testing framework (for running tests)
+
+## Testing
+
+Run the test suite:
+```bash
+pytest
+```
+
+Run specific tests:
+```bash
+pytest tests/test_scraper_controls.py
+```
+
+Tests are located in `tests/test_scraper_controls.py` and follow TDD methodology.
