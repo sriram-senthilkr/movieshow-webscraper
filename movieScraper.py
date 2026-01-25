@@ -3,6 +3,7 @@ import requests
 import config
 import os
 import platform
+import threading
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
@@ -51,6 +52,12 @@ error_state = {
     "first_error_time": None,
     "last_notification_time": None,
     "notification_interval": 1200  # Notify every 5 minutes while in error state
+}
+
+# Scraper state for start/stop controls
+scraper_state = {
+    "is_running": False,  # Start paused by default
+    "command": None
 }
 
 # Initialize currentmovies.txt on script start
@@ -156,24 +163,98 @@ def check_url(url):
         send_telegram_notification(f"(Error: {e}) {url} is not available")
         print(f"(Error: {e}) {url} is not available")
 
+# Start/Stop control functions
+def start_scraper():
+    """Start the scraper if not already running."""
+    if not scraper_state["is_running"]:
+        scraper_state["is_running"] = True
+        send_telegram_notification("✅ Scraper started!")
+        print("[START] Scraper started")
+    else:
+        send_telegram_notification("Scraper is already running")
+        print("[START] Already running")
+
+def stop_scraper():
+    """Stop the scraper if not already stopped."""
+    if scraper_state["is_running"]:
+        scraper_state["is_running"] = False
+        send_telegram_notification("⏸️ Scraper stopped!")
+        print("[STOP] Scraper stopped")
+    else:
+        send_telegram_notification("Scraper is already stopped")
+        print("[STOP] Already stopped")
+
+def show_current_list():
+    """Display the current list of movies being tracked."""
+    movies = retrieve_current_movies()
+    if movies:
+        message = "📽️ Current movies:\n" + "\n".join(f"• {movie}" for movie in movies)
+    else:
+        message = "No movies currently tracked"
+    send_telegram_notification(message)
+    print(f"[LIST] Showing {len(movies)} movies")
+
+def handle_telegram_command(update):
+    """Handle an incoming Telegram command update."""
+    message = update.get("message", {})
+    text = message.get("text", "")
+
+    if text == "/start":
+        start_scraper()
+    elif text == "/stop":
+        stop_scraper()
+    elif text == "/list":
+        show_current_list()
+    elif text == "/status":
+        status = "Running" if scraper_state["is_running"] else "Stopped"
+        send_telegram_notification(f"📊 Status: {status}")
+        print(f"[STATUS] {status}")
+    # Unknown commands are silently ignored
+
+def telegram_command_listener():
+    """Background thread to listen for Telegram commands."""
+    last_update_id = 0
+    while True:
+        try:
+            response = requests.get(f"{url}/getUpdates", params={"offset": last_update_id + 1}, timeout=5)
+            if response.status_code == 200:
+                updates = response.json().get("result", [])
+
+                for update in updates:
+                    handle_telegram_command(update)
+                    last_update_id = update["update_id"]
+        except Exception as e:
+            print(f"[COMMAND LISTENER ERROR] {str(e)}")
+
+        time.sleep(2)
+
 
 
 
 # Initialize the movies file when script starts
 initialize_movies_file()
 
+# Start the command listener thread in the background
+command_thread = threading.Thread(target=telegram_command_listener, daemon=True)
+command_thread.start()
+print("[INIT] Command listener thread started")
+
+# Send startup notification
+send_telegram_notification("🤖 Bot started! Use /start to begin scraping.")
+print("[INIT] Bot started in PAUSED state. Waiting for /start command...")
+
 while True:
     try:
-        scrape_new_movies(new_movies)
-        current_movies = retrieve_current_movies()
-
-        check_for_changes(current_movies, new_movies)
-        new_movies = []
-
-        # for url in urls_to_check:
-        #     check_url(url)
-    
-        time.sleep(10)
+        if scraper_state["is_running"]:
+            # Running state: scrape as normal
+            scrape_new_movies(new_movies)
+            current_movies = retrieve_current_movies()
+            check_for_changes(current_movies, new_movies)
+            new_movies = []
+            time.sleep(10)
+        else:
+            # Paused state: just wait briefly before checking again
+            time.sleep(2)
 
     except Exception as e:
         handle_error(f"Unexpected error in main loop: {str(e)}")
